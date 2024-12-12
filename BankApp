@@ -16,8 +16,6 @@ from urllib.parse import quote_plus
 import threading
 from sqlalchemy import create_engine, text
 
-
-# Параметры подключения к базе данных SQL Server
 server = 'DESKTOP-3T1O5TL'
 database = 'BankAppDB'
 
@@ -36,46 +34,36 @@ class AppBank(ctk.CTk):
         self.title("Bank Application")
         self.geometry("800x600")
 
-        # Подключение к базе данных
         try:
             self.conn = pyodbc.connect(connection_str)
         except pyodbc.Error as e:
             messagebox.showerror("Connection error", f"Failed to connect to the database: {e}")
             sys.exit(1)
-
-        # Инициализация фреймов
         self.main_frame = ctk.CTkFrame(self, width=800, height=600)
         self.main_frame.pack(fill="both", expand=True)
 
         customtkinter.set_default_color_theme("green")
 
-        # Показать фрейм авторизации
         self.show_login_frame()
 
     def show_login_frame(self):
-        """Отображает фрейм авторизации."""
         self.clear_frame()
 
-        # Заголовок
         label = ctk.CTkLabel(self.main_frame, text="Login to Bank Application", font=("Arial", 25, "bold"))
         label.place(relx=0.5, rely=0.1, anchor="center")  # Центрируем
 
-        # Поля для ввода данных
         self.phone_entry = ctk.CTkEntry(self.main_frame, placeholder_text="Phone")
         self.phone_entry.place(relx=0.5, rely=0.3, anchor="center")  # Центрируем
 
         self.password_entry = ctk.CTkEntry(self.main_frame, placeholder_text="Password", show="*")
         self.password_entry.place(relx=0.5, rely=0.4, anchor="center")
 
-        # Кнопка входа
         login_button = ctk.CTkButton(self.main_frame, text="Login", command=self.login_user)
         login_button.place(relx=0.5, rely=0.5, anchor="center")
 
-        # Кнопка регистрации
         register_button = ctk.CTkButton(self.main_frame, text="Register", command=self.show_register_frame)
         register_button.place(relx=0.5, rely=0.6, anchor="center")
 
-        # Настройки внешнего вида
         appearance_label = ctk.CTkLabel(self.main_frame, text="Appearance Mode:", font=("Arial", 12))
         appearance_label.place(relx=0.4, rely=0.7, anchor="center")
 
@@ -85,13 +73,10 @@ class AppBank(ctk.CTk):
         appearance_menu.place(relx=0.6, rely=0.7, anchor="center")
 
     def show_register_frame(self):
-        """Отображает фрейм регистрации."""
         self.clear_frame()
 
         label = ctk.CTkLabel(self.main_frame, text="Register New Account", font=("Arial", 20))
         label.pack(pady=20)
-
-        # Поля для ввода данных
         self.first_name_entry = ctk.CTkEntry(self.main_frame, placeholder_text="First Name")
         self.first_name_entry.pack(pady=10)
         self.last_name_entry = ctk.CTkEntry(self.main_frame, placeholder_text="Last Name")
@@ -107,16 +92,13 @@ class AppBank(ctk.CTk):
         self.password_register_entry = ctk.CTkEntry(self.main_frame, placeholder_text="Password", show="*")
         self.password_register_entry.pack(pady=10)
 
-        # Кнопка для регистрации
         register_button = ctk.CTkButton(self.main_frame, text="Register", command=self.register_user)
         register_button.pack(pady=10)
 
-        # Кнопка возврата к авторизации
         back_button = ctk.CTkButton(self.main_frame, text="Back to Login", command=self.show_login_frame)
         back_button.pack(pady=10)
 
     def login_user(self):
-        """Проверяет данные пользователя (клиент или сотрудник) и входит в систему."""
         phone = self.phone_entry.get()
         password = self.password_entry.get()
 
@@ -126,7 +108,6 @@ class AppBank(ctk.CTk):
 
         cursor = self.conn.cursor()
 
-        # Проверяем, является ли пользователь сотрудником
         employee_query = "SELECT employee_id, firstname, lastname FROM employees WHERE phone = ? AND password = ?"
         cursor.execute(employee_query, (phone, password))
         employee = cursor.fetchone()
@@ -135,14 +116,11 @@ class AppBank(ctk.CTk):
             employee_id, firstname, lastname = employee
             messagebox.showinfo("Successfully", f"Welcome, {firstname} {lastname}! (Employee)")
 
-            # Сохраняем ID сотрудника
             self.current_employee_id = employee_id
 
-            # Переход на фрейм сотрудника
             self.show_employee_frame(employee_id)
             return
 
-        # Проверяем, является ли пользователь клиентом
         customer_query = "SELECT customer_id, first_name, last_name FROM customer WHERE phone = ? AND password = ?"
         cursor.execute(customer_query, (phone, password))
         customer = cursor.fetchone()
@@ -151,10 +129,8 @@ class AppBank(ctk.CTk):
             customer_id, first_name, last_name = customer
             messagebox.showinfo("Successfully", f"Welcome, {first_name} {last_name}!")
 
-            # Сохраняем ID клиента
             self.current_customer_id = customer_id
 
-            # Проверяем, есть ли у клиента активный счет
             account_query = "SELECT account_number FROM accounts WHERE customer_id = ?"
             cursor.execute(account_query, (self.current_customer_id,))
             account = cursor.fetchone()
@@ -165,15 +141,12 @@ class AppBank(ctk.CTk):
                 self.current_account_number = None
                 messagebox.showwarning("Attention", "The user does not have an active account.")
 
-            # Переход на интерфейс клиента
             self.show_bank_frame(customer_id)
             return
 
-        # Если пользователь не найден ни среди клиентов, ни среди сотрудников
         messagebox.showerror("Error", "Invalid phone number or password")
 
     def register_user(self):
-        """Регистрирует нового пользователя и создаёт для него активный банковский счёт с уникальным номером."""
         first_name = self.first_name_entry.get()
         last_name = self.last_name_entry.get()
         phone = self.phone_register_entry.get()
@@ -185,17 +158,14 @@ class AppBank(ctk.CTk):
             messagebox.showerror("Error", "Fill in all the fields and select the gender!")
             return
 
-        # Проверка номера телефона
         if not (phone.startswith("+7") and len(phone) == 12 and phone[1:].isdigit()):
             messagebox.showerror("Error", "Enter the correct phone number in the format +7XXXXXXXXXX!")
             return
 
-        # Генерация уникального номера счета
         account_number = self.generate_account_number()
 
         cursor = self.conn.cursor()
         try:
-            # Вставляем данные нового пользователя
             query_customer = """
             INSERT INTO customer (first_name, last_name, phone, date_of_birth, gender, [password])
             OUTPUT INSERTED.customer_id
@@ -203,10 +173,8 @@ class AppBank(ctk.CTk):
             """
             cursor.execute(query_customer, (first_name, last_name, phone, dob, gender, password))
 
-            # Получаем ID созданного пользователя сразу через OUTPUT
             customer_id = cursor.fetchone()[0]
 
-            # Создаём для него активный банковский счёт
             query_account = """
             INSERT INTO accounts (account_number, customer_id)
             VALUES (?, ?)
@@ -220,26 +188,23 @@ class AppBank(ctk.CTk):
             )
             self.show_login_frame()
         except pyodbc.Error as e:
-            self.conn.rollback()  # Откат изменений в случае ошибки
+            self.conn.rollback()
             messagebox.showerror("Error", f"Failed to register: {e}")
 
     def generate_account_number(self):
-        """Генерирует уникальный номер счета, соответствующий требованиям базы данных."""
+
         while True:
-            # Генерация номера счета, начинающегося с 4400
             account_number = f"4400{''.join(str(random.randint(0, 9)) for _ in range(8))}"
 
-            # Проверка на уникальность в базе данных
             cursor = self.conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM accounts WHERE account_number = ?", (account_number,))
             if cursor.fetchone()[0] == 0:
                 return account_number
 
     def show_bank_frame(self, customer_id):
-        """Отображает фрейм 'Мой банк'."""
+
         self.clear_frame()
 
-        # Заголовок
         title_label = ctk.CTkLabel(
             self.main_frame,
             text="My Bank",
@@ -247,7 +212,6 @@ class AppBank(ctk.CTk):
         )
         title_label.pack(pady=(20, 10))
 
-        # Получение баланса пользователя
         cursor = self.conn.cursor()
         query_balance = "SELECT balance, currency FROM accounts WHERE customer_id = ? AND is_active = 1"
         cursor.execute(query_balance, (customer_id,))
@@ -255,7 +219,7 @@ class AppBank(ctk.CTk):
 
         if account:
             balance, currency = account
-            # Баланс
+
             balance_frame = ctk.CTkFrame(self.main_frame, border_width=2, corner_radius=8)
             balance_frame.pack(pady=10, padx=20, fill="x")
 
@@ -273,19 +237,13 @@ class AppBank(ctk.CTk):
             )
             balance_label.pack(pady=10)
             return
-
-        # Курсы валют
         try:
-            # API для получения валютных курсов
             response = requests.get("https://api.exchangerate-api.com/v4/latest/USD")
             data = response.json()
             rates = data["rates"]
-
-            # Оставляем только нужные валюты
             allowed_currencies = ["USD", "RUB", "KZT", "CHF", "GBP", "CNY", "EUR"]
             filtered_rates = {code: rate for code, rate in rates.items() if code in allowed_currencies}
 
-            # Рамка для курсов валют
             rates_frame = ctk.CTkFrame(self.main_frame, border_width=2, corner_radius=8)
             rates_frame.pack(pady=10, padx=20, anchor="center")
 
@@ -296,7 +254,6 @@ class AppBank(ctk.CTk):
             )
             rates_label.pack(pady=(10, 5))
 
-            # Строка с курсами валют
             rates_row_frame = ctk.CTkFrame(rates_frame)
             rates_row_frame.pack(pady=(5, 10), padx=10, fill="x")
 
@@ -316,7 +273,6 @@ class AppBank(ctk.CTk):
             )
             error_label.pack(pady=10)
 
-        # Операционные кнопки
         buttons_frame = ctk.CTkFrame(self.main_frame, corner_radius=8)
         buttons_frame.pack(pady=20, padx=20, fill="x")
 
@@ -335,7 +291,6 @@ class AppBank(ctk.CTk):
             )
             button.pack(pady=5)
 
-        # Кнопка выхода
         logout_button = ctk.CTkButton(
             self.main_frame,
             text="Logout",
@@ -344,38 +299,31 @@ class AppBank(ctk.CTk):
         logout_button.pack(pady=20)
 
     def show_transaction_frame(self):
-        """Отображает фрейм для совершения транзакций."""
         self.clear_frame()
 
-        # Заголовок
         label = ctk.CTkLabel(self.main_frame, text="New Transaction", font=("Arial", 20))
         label.pack(pady=20)
 
-        # Поле для ввода номера целевого счета
         target_account_label = ctk.CTkLabel(self.main_frame, text="Target Account (12 digits):")
         target_account_label.pack(pady=5)
         self.target_account_entry = ctk.CTkEntry(self.main_frame, placeholder_text="Enter account number")
         self.target_account_entry.pack(pady=5)
 
-        # Поле для ввода суммы перевода
         amount_label = ctk.CTkLabel(self.main_frame, text="Amount:")
         amount_label.pack(pady=5)
         self.amount_entry = ctk.CTkEntry(self.main_frame, placeholder_text="Enter amount")
         self.amount_entry.pack(pady=5)
 
-        # Поле для ввода описания
         description_label = ctk.CTkLabel(self.main_frame, text="Description (optional):")
         description_label.pack(pady=5)
         self.description_entry = ctk.CTkEntry(self.main_frame, placeholder_text="Enter description")
         self.description_entry.pack(pady=5)
 
-        # Кнопка для подтверждения транзакции
         transfer_button = ctk.CTkButton(
             self.main_frame, text="Make Transfer", command=self.perform_transaction
         )
         transfer_button.pack(pady=20)
 
-        # Кнопка возврата
         back_button = ctk.CTkButton(
             self.main_frame,
             text="Back to menu",
@@ -384,12 +332,10 @@ class AppBank(ctk.CTk):
         back_button.pack(pady=10)
 
     def perform_transaction(self):
-        """Обрабатывает перевод между счетами с проверкой на мошенничество."""
         target_account = self.target_account_entry.get()
         amount = self.amount_entry.get()
         description = self.description_entry.get()
 
-        # Проверка данных
         if not target_account or not amount:
             messagebox.showerror("Error", "Enter the account number and amount")
             return
@@ -402,7 +348,6 @@ class AppBank(ctk.CTk):
             messagebox.showerror("Error", f"Incorrect amount: {e}")
             return
 
-        # Проверка формата целевого счета
         if not (target_account.startswith("4400") and len(target_account) == 12):
             messagebox.showerror("Error", "Invalid target account format")
             return
@@ -410,7 +355,6 @@ class AppBank(ctk.CTk):
         try:
             cursor = self.conn.cursor()
 
-            # Проверка текущего баланса отправителя
             cursor.execute(
                 "SELECT balance FROM accounts WHERE account_number = ?",
                 (self.current_account_number,)
@@ -425,7 +369,6 @@ class AppBank(ctk.CTk):
                 messagebox.showerror("Error", "Insufficient funds in the account")
                 return
 
-            # Проверка существования целевого счета
             cursor.execute(
                 "SELECT balance FROM accounts WHERE account_number = ?",
                 (target_account,)
@@ -437,16 +380,13 @@ class AppBank(ctk.CTk):
 
             target_account_balance = target_account_balance[0]
 
-            # Определение новых балансов
             new_sender_balance = sender_balance - amount
             new_target_balance = target_account_balance + amount
 
-            # Расчет времени и шага (step)
             transaction_date = datetime.datetime.now()
             start_date = datetime.datetime(transaction_date.year, transaction_date.month, 1)
             step = (transaction_date - start_date).days * 24 + (transaction_date - start_date).seconds // 3600
 
-            # Добавление записи о транзакции со статусом 'pending'
             cursor.execute(
                 """
                 INSERT INTO transactions (
@@ -456,18 +396,18 @@ class AppBank(ctk.CTk):
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    self.current_account_number,  # Номер счета отправителя
-                    target_account,  # Номер счета получателя
-                    amount,  # Сумма
-                    "Transfer",  # Тип транзакции
-                    description,  # Описание
-                    "pending",  # Статус транзакции
-                    sender_balance,  # Старый баланс отправителя
-                    new_sender_balance,  # Новый баланс отправителя
-                    target_account_balance,  # Старый баланс получателя
-                    new_target_balance,  # Новый баланс получателя
-                    0,  # Флаг подозрительности (изначально 0)
-                    transaction_date  # Дата транзакции
+                    self.current_account_number,
+                    target_account,
+                    amount,
+                    "Transfer",
+                    description,
+                    "pending",
+                    sender_balance,
+                    new_sender_balance,
+                    target_account_balance,
+                    new_target_balance,
+                    0,
+                    transaction_date
                 )
             )
 
@@ -480,10 +420,8 @@ class AppBank(ctk.CTk):
             messagebox.showerror("Error", f"Transaction execution error: {e}")
 
     def show_stocks_frame(self):
-        """Показать фрейм для акций."""
         self.clear_frame()
 
-        # Заголовок
         title_label = ctk.CTkLabel(
             self.main_frame,
             text="Top 10 Exchanges",
@@ -492,28 +430,22 @@ class AppBank(ctk.CTk):
         title_label.pack(pady=(20, 10))
 
         try:
-            # API-запрос к биржам (пример для CoinGecko API)
             response = requests.get("https://api.coingecko.com/api/v3/exchanges")
             data = response.json()
 
-            # Получение топ-10 бирж
             top_exchanges = data[:10]
 
-            # Рамка для списка бирж
             exchanges_frame = ctk.CTkFrame(self.main_frame, border_width=2, corner_radius=8)
             exchanges_frame.pack(pady=10, padx=10, fill="both", expand=True)
 
-            # Отображение списка бирж
             for exchange in top_exchanges:
                 name = exchange.get("name", "Unknown")
                 country = exchange.get("country", "Unknown")
                 trade_volume = exchange.get("trade_volume_24h_btc", 0)
 
-                # Внутренняя рамка для биржи
                 exchange_row = ctk.CTkFrame(exchanges_frame, corner_radius=5)
                 exchange_row.pack(pady=5, padx=5, fill="x", expand=True)
 
-                # Название биржи
                 name_label = ctk.CTkLabel(
                     exchange_row,
                     text=name,
@@ -521,7 +453,6 @@ class AppBank(ctk.CTk):
                 )
                 name_label.pack(side="left", padx=10)
 
-                # Страна
                 country_label = ctk.CTkLabel(
                     exchange_row,
                     text=f"Country: {country}",
@@ -529,7 +460,6 @@ class AppBank(ctk.CTk):
                 )
                 country_label.pack(side="left", padx=10)
 
-                # Объем торгов
                 volume_label = ctk.CTkLabel(
                     exchange_row,
                     text=f"24h Volume: {trade_volume:.2f} BTC",
@@ -545,7 +475,6 @@ class AppBank(ctk.CTk):
             )
             error_label.pack(pady=10)
 
-        # Кнопка возврата в главное меню
         back_button = ctk.CTkButton(
             self.main_frame,
             text="Back",
@@ -555,14 +484,12 @@ class AppBank(ctk.CTk):
 
 
     def show_deposit_frame(self):
-        """Отображает фрейм для управления депозитом."""
         self.clear_frame()
 
         # Заголовок
         label = ctk.CTkLabel(self.main_frame, text="Manage Deposit", font=("Arial", 20))
         label.pack(pady=20)
 
-        # Подключение к базе данных, чтобы получить информацию о депозите
         try:
             cursor = self.conn.cursor()
             query = """
@@ -573,10 +500,9 @@ class AppBank(ctk.CTk):
             cursor.execute(query, (self.current_account_number,))
             deposit = cursor.fetchone()
 
-            if deposit:  # Если депозит уже существует
+            if deposit:
                 deposit_id, amount, interest_rate, start_date, end_date = deposit
 
-                # Отображение информации о депозите
                 deposit_info = ctk.CTkLabel(
                     self.main_frame,
                     text=(f"Deposit Balance: {amount:.2f} USD\n"
@@ -588,7 +514,6 @@ class AppBank(ctk.CTk):
                 )
                 deposit_info.pack(pady=10)
 
-                # Кнопка для перевода средств с депозита на свой счет
                 withdraw_button = ctk.CTkButton(
                     self.main_frame,
                     text="Withdraw to Account",
@@ -596,7 +521,6 @@ class AppBank(ctk.CTk):
                 )
                 withdraw_button.pack(pady=10)
 
-                # Кнопка для пополнения депозита со счета
                 add_button = ctk.CTkButton(
                     self.main_frame,
                     text="Add to Deposit",
@@ -604,7 +528,6 @@ class AppBank(ctk.CTk):
                 )
                 add_button.pack(pady=10)
 
-                # Кнопка для закрытия депозита (если баланс = 0)
                 if amount == 0:
                     close_button = ctk.CTkButton(
                         self.main_frame,
@@ -620,7 +543,7 @@ class AppBank(ctk.CTk):
                         fg_color="red"
                     )
                     warning_label.pack(pady=10)
-            else:  # Если депозита нет, показываем кнопку "Открыть депозит"
+            else:
                 no_deposit_label = ctk.CTkLabel(self.main_frame, text="No active deposit found.")
                 no_deposit_label.pack(pady=10)
 
@@ -635,7 +558,6 @@ class AppBank(ctk.CTk):
             error_label = ctk.CTkLabel(self.main_frame, text=f"Error fetching deposit: {e}")
             error_label.pack(pady=20)
 
-        # Кнопка возврата
         back_button = ctk.CTkButton(
             self.main_frame,
             text="Back to menu",
@@ -643,14 +565,10 @@ class AppBank(ctk.CTk):
         )
         back_button.pack(pady=10)
 
-    # Функция для открытия нового депозита
     def open_deposit(self):
-        """Создает новый депозит для текущего аккаунта."""
         try:
             cursor = self.conn.cursor()
-
-            # Стартовые параметры депозита
-            interest_rate = 3.5  # Например, фиксированная ставка
+            interest_rate = 3.5
             initial_amount = simpledialog.askfloat("Open Deposit", "Enter initial deposit amount:")
 
             if initial_amount is None or initial_amount <= 0:
@@ -670,7 +588,6 @@ class AppBank(ctk.CTk):
             messagebox.showerror("Error", f"Error opening deposit: {e}")
 
     def withdraw_from_deposit(self, deposit_id, amount):
-        """Перевод средств с депозита на счет."""
         if amount <= 0:
             messagebox.showerror("Error", "There are not enough funds on the deposit to withdraw.")
             return
@@ -680,8 +597,6 @@ class AppBank(ctk.CTk):
             query = "UPDATE deposit SET amount = 0 WHERE deposit_id = ?"
             cursor.execute(query, (deposit_id,))
             self.conn.commit()
-
-            # Обновляем баланс основного счета
             update_account = """
                 UPDATE accounts
                 SET balance = balance + ?
@@ -695,7 +610,6 @@ class AppBank(ctk.CTk):
             messagebox.showerror("Error", f"Money transfer error: {e}")
 
     def add_to_deposit(self, deposit_id):
-        """Пополнение депозита со счета."""
         amount = simpledialog.askfloat("Deposit replenishment", "Enter the amount:")
         if not amount or amount <= 0:
             messagebox.showerror("Error", "Enter the correct amount.")
@@ -703,8 +617,6 @@ class AppBank(ctk.CTk):
 
         try:
             cursor = self.conn.cursor()
-
-            # Проверяем баланс основного счета
             check_balance = """
                 SELECT balance FROM accounts WHERE account_number = ?
             """
@@ -714,8 +626,6 @@ class AppBank(ctk.CTk):
             if amount > account_balance:
                 messagebox.showerror("Error", "Insufficient funds in the main account.")
                 return
-
-            # Списываем сумму с основного счета
             update_account = """
                 UPDATE accounts
                 SET balance = balance - ?
@@ -723,7 +633,6 @@ class AppBank(ctk.CTk):
             """
             cursor.execute(update_account, (amount, self.current_account_number))
 
-            # Добавляем сумму на депозит
             update_deposit = """
                 UPDATE deposit
                 SET amount = amount + ?
@@ -737,7 +646,6 @@ class AppBank(ctk.CTk):
             messagebox.showerror("Error", f"Deposit replenishment error: {e}")
 
     def close_deposit(self, deposit_id, amount):
-        """Закрытие депозита (доступно, если баланс депозита 0)."""
         if amount > 0:
             messagebox.showerror("Error", "You cannot close the deposit while there are funds on it.")
             return
@@ -753,14 +661,11 @@ class AppBank(ctk.CTk):
             messagebox.showerror("Error", f"Deposit closing error: {e}")
 
     def show_credit_frame(self):
-        """Отображает фрейм для управления кредитами."""
         self.clear_frame()
 
         # Заголовок
         label = ctk.CTkLabel(self.main_frame, text="Manage Credits", font=("Arial", 20))
         label.pack(pady=20)
-
-        # Подключение к базе данных, чтобы получить текущий активный кредит
         try:
             cursor = self.conn.cursor()
             query = """
@@ -774,7 +679,6 @@ class AppBank(ctk.CTk):
             if credit:
                 credit_id, amount, rate, start_date, end_date, monthly_payment, balance, status = credit
 
-                # Информация о текущем кредите
                 credit_info = ctk.CTkLabel(
                     self.main_frame,
                     text=(
@@ -790,8 +694,6 @@ class AppBank(ctk.CTk):
                     anchor="w"
                 )
                 credit_info.pack(pady=10)
-
-                # Кнопка для погашения кредита
                 pay_button = ctk.CTkButton(
                     self.main_frame,
                     text="Make Payment",
@@ -805,8 +707,6 @@ class AppBank(ctk.CTk):
         except Exception as e:
             error_label = ctk.CTkLabel(self.main_frame, text=f"Error fetching credits: {e}")
             error_label.pack(pady=20)
-
-        # Кнопка для подачи заявки на новый кредит
         new_credit_button = ctk.CTkButton(
             self.main_frame,
             text="Apply for New Credit",
@@ -814,7 +714,6 @@ class AppBank(ctk.CTk):
         )
         new_credit_button.pack(pady=10)
 
-        # Кнопка возврата
         back_button = ctk.CTkButton(
             self.main_frame,
             text="Back to menu",
@@ -823,7 +722,6 @@ class AppBank(ctk.CTk):
         back_button.pack(pady=10)
 
     def apply_for_credit(self):
-        """Отображает окно для подачи заявки на новый кредит."""
         credit_amount = simpledialog.askfloat("Credit Application", "Enter credit amount:")
         if not credit_amount or credit_amount <= 0:
             messagebox.showerror("Error", "Incorrect loan amount.")
@@ -831,11 +729,10 @@ class AppBank(ctk.CTk):
 
         try:
             cursor = self.conn.cursor()
-            interest_rate = 5.0  # Пример фиксированной ставки
-            duration_months = 12  # Пример фиксированного срока кредита
+            interest_rate = 5.0
+            duration_months = 12
             monthly_payment = (credit_amount * (1 + (interest_rate / 100))) / duration_months
 
-            # Проверка, есть ли уже активный кредит
             query_active_credit = "SELECT credit_id FROM credit WHERE customer_id = ? AND credit_status = 'active'"
             cursor.execute(query_active_credit, (self.current_customer_id,))
             active_credit = cursor.fetchone()
@@ -844,7 +741,6 @@ class AppBank(ctk.CTk):
                 messagebox.showerror("Error", "You already have an active loan. Pay it off before making a new one.")
                 return
 
-            # Оформление нового кредита
             query_credit = """
                 INSERT INTO credit (customer_id, credit_amount, interest_rate, start_date, end_date, mounthly_payment, remaining_balance, credit_status)
                 VALUES (?, ?, ?, GETDATE(), DATEADD(MONTH, ?, GETDATE()), ?, ?, 'active')
@@ -857,12 +753,10 @@ class AppBank(ctk.CTk):
                     interest_rate,
                     duration_months,
                     monthly_payment,
-                    credit_amount  # Первоначальный остаток равен полной сумме
+                    credit_amount
                 )
             )
             self.conn.commit()
-
-            # Обновление баланса пользователя
             query_balance = """
                 UPDATE accounts
                 SET balance = balance + ?
@@ -878,7 +772,6 @@ class AppBank(ctk.CTk):
             messagebox.showerror("Error", f"Loan processing error: {e}")
 
     def make_credit_payment(self, credit_id, remaining_balance):
-        """Обрабатывает платеж по кредиту."""
         payment_amount = simpledialog.askfloat("Make Payment", "Enter payment amount:")
         if not payment_amount or payment_amount <= 0:
             messagebox.showerror("Error", "Incorrect payment amount.")
@@ -887,7 +780,6 @@ class AppBank(ctk.CTk):
         try:
             cursor = self.conn.cursor()
 
-            # Проверка текущего баланса пользователя
             query_balance = "SELECT balance FROM accounts WHERE customer_id = ? AND is_active = 1"
             cursor.execute(query_balance, (self.current_customer_id,))
             current_balance = cursor.fetchone()[0]
@@ -900,7 +792,6 @@ class AppBank(ctk.CTk):
                 messagebox.showerror("Error", "The payment amount exceeds the loan balance.")
                 return
 
-            # Вычитание суммы платежа из баланса
             query_update_balance = """
                 UPDATE accounts
                 SET balance = balance - ?
@@ -908,7 +799,6 @@ class AppBank(ctk.CTk):
             """
             cursor.execute(query_update_balance, (payment_amount, self.current_customer_id))
 
-            # Обновление остатка по кредиту
             query_update_credit = """
                 UPDATE credit
                 SET remaining_balance = remaining_balance - ?
@@ -916,7 +806,6 @@ class AppBank(ctk.CTk):
             """
             cursor.execute(query_update_credit, (payment_amount, credit_id))
 
-            # Проверка остатка по кредиту
             query_check_balance = "SELECT remaining_balance FROM credit WHERE credit_id = ?"
             cursor.execute(query_check_balance, (credit_id,))
             new_balance = cursor.fetchone()[0]
@@ -935,10 +824,9 @@ class AppBank(ctk.CTk):
         customtkinter.set_appearance_mode(new_appearance_mode)
 
     def show_employee_frame(self, employee_id):
-        """Отображает интерфейс для сотрудников банка."""
         self.clear_frame()
 
-        # Заголовок
+
         title_label = ctk.CTkLabel(
             self.main_frame,
             text="Employee Dashboard",
@@ -946,7 +834,7 @@ class AppBank(ctk.CTk):
         )
         title_label.pack(pady=(20, 10))
 
-        # Операционные кнопки
+
         buttons_frame = ctk.CTkFrame(self.main_frame, corner_radius=8)
         buttons_frame.pack(pady=20, padx=20, fill="x")
 
@@ -966,7 +854,7 @@ class AppBank(ctk.CTk):
             )
             button.pack(pady=5)
 
-        # Кнопка выхода
+
         logout_button = ctk.CTkButton(
             self.main_frame,
             text="Log Out",
@@ -975,10 +863,8 @@ class AppBank(ctk.CTk):
         logout_button.pack(pady=20)
 
     def show_active_credits(self):
-        """Отображает список активных кредитов."""
         self.clear_frame()
 
-        # Заголовок
         label = ctk.CTkLabel(self.main_frame, text="Active Credits", font=("Arial", 18))
         label.pack(pady=20)
 
@@ -1016,19 +902,17 @@ class AppBank(ctk.CTk):
             error_label = ctk.CTkLabel(self.main_frame, text=f"Error fetching active credits: {e}")
             error_label.pack(pady=20)
 
-        # Кнопка возврата
+
         back_button = ctk.CTkButton(self.main_frame, text="Back",
                                     command=lambda: self.show_employee_frame(self.current_employee_id))
         back_button.pack(pady=10)
 
     def manage_accounts(self):
-        """Позволяет сотруднику управлять банковскими счетами клиентов."""
+
         self.clear_frame()
 
         label = ctk.CTkLabel(self.main_frame, text="Manage Accounts", font=("Arial", 18))
         label.pack(pady=20)
-
-        # Пример интерфейса: выбор действия
         actions = [
             ("Create Account", self.create_account),
             ("Block Account", self.block_account),
@@ -1038,31 +922,23 @@ class AppBank(ctk.CTk):
         for text, command in actions:
             button = ctk.CTkButton(self.main_frame, text=text, command=command)
             button.pack(pady=5)
-
-        # Кнопка возврата
         back_button = ctk.CTkButton(self.main_frame, text="Back",
                                     command=lambda: self.show_employee_frame(self.current_employee_id))
         back_button.pack(pady=10)
 
     def create_account(self):
-        """Логика создания нового счета клиента."""
         messagebox.showinfo("Create Account", "The account creation function has not been implemented yet.")
 
     def block_account(self):
-        """Логика блокировки счета клиента."""
         messagebox.showinfo("Block Account", "The account blocking feature has not yet been implemented.")
 
     def delete_account(self):
-        """Логика удаления счета клиента."""
         messagebox.showinfo("Delete Account", "The account deletion feature has not yet been implemented.")
 
     def start_fraud_detection(self):
         threading.Thread(target=self.fraud_detection).start()
 
     def prepare_data_for_prediction(self, data):
-        """Подготовка данных для модели (например, масштабирование, преобразования)."""
-
-        # Приведение всех имён столбцов к формату, который ожидался моделью
         data = data.rename(columns={
             'oldBalanceOrig': 'oldBalanceOrig',
             'newBalanceOrig': 'newBalanceOrig',
@@ -1071,35 +947,29 @@ class AppBank(ctk.CTk):
             'amount': 'amount'
         })
 
-        # Заполнение пропусков (если есть)
         data = data.fillna(0)
 
-        # Применение Box-Cox с проверкой на константность
         for col in ['amount', 'oldBalanceOrig', 'newBalanceOrig', 'oldBalanceDest', 'newBalanceDest']:
-            if len(np.unique(data[col])) == 1:  # Если все значения в столбце одинаковы
+            if len(np.unique(data[col])) == 1:
                 print(f"Column {col} is constant. Skipping Box-Cox transformation.")
-                data[f"{col}_boxcox"] = data[col]  # Копируем значения без изменений
+                data[f"{col}_boxcox"] = data[col]
             else:
-                data[f"{col}_boxcox"], _ = boxcox(data[col] + 1)  # Добавляем 1, чтобы избежать проблем с нулями
+                data[f"{col}_boxcox"], _ = boxcox(data[col] + 1)
 
-        # Выделение признаков для модели
+
         feature_names = ['amount_boxcox', 'oldBalanceOrig_boxcox', 'newBalanceOrig_boxcox',
                          'oldBalanceDest_boxcox', 'newBalanceDest_boxcox']
         X = data[feature_names]
 
-        # Выделение идентификаторов транзакций (для последующего обновления в БД)
         transaction_ids = data['transaction_id']
 
         return X, transaction_ids
 
     def fraud_detection(self):
-        """Проверяет транзакции на мошенничество с использованием обученной модели."""
 
         if not hasattr(self, 'current_employee_id') or self.current_employee_id is None:
             print("Employee ID is not set. Please log in as an employee.")
             return
-
-        # Параметры подключения к базе данных
         server = 'DESKTOP-3T1O5TL'
         database = 'BankAppDB'
         driver = 'ODBC Driver 18 for SQL Server'
@@ -1117,10 +987,8 @@ class AppBank(ctk.CTk):
         )
 
         try:
-            # Создание SQLAlchemy-движка
             engine = create_engine(connection_str)
 
-            # Извлечение данных из базы
             query = """
             SELECT transaction_id, account_from, account_to, oldBalanceOrig, newBalanceOrig, 
                    oldBalanceDest, newBalanceDest, amount, isFlaggedFraud
@@ -1129,26 +997,23 @@ class AppBank(ctk.CTk):
             """
             data = pd.read_sql(query, engine)
 
-            # Проверка, если данных нет
             if data.empty:
                 print("No pending transactions found.")
                 return
 
-            # Подготовка данных для модели
             X, transaction_ids = self.prepare_data_for_prediction(data)
-
-            # Загрузка модели
             try:
                 logreg = joblib.load('C:/Users/Админ/OneDrive/Documents/3 курс курсовая/fraud_detection_model.pkl')
             except Exception as e:
                 print(f"Error loading model: {e}")
                 return
-
-            # Прогнозирование мошенничества
             predictions = logreg.predict(X)
             prediction_probabilities = logreg.predict_proba(X)[:, 1]
+            for transaction_id, prediction, prob in zip(transaction_ids, predictions, prediction_probabilities):
+                print(
+                    f"Transaction ID: {transaction_id}, Fraud Probability: {prob:.2%}, Prediction: {'Fraudulent' if prediction else 'Legitimate'}")
 
-            # Обновление базы данных с результатами
+
             try:
                 with engine.begin() as connection:
                     update_query = text("""
@@ -1163,40 +1028,35 @@ class AppBank(ctk.CTk):
                         WHERE account_number = :account_number
                     """)
 
+                    fraudulent_count = 0
                     for transaction_id, prediction, prob, account_from, account_to, new_balance_orig, new_balance_dest in zip(
                             transaction_ids, predictions, prediction_probabilities, data['account_from'],
                             data['account_to'], data['newBalanceOrig'], data['newBalanceDest']):
-                        is_fraud = int(prediction)
-                        if prob < 0.9:
-                            is_fraud = 0  # Честная транзакция
-
-                        # Обновление статуса транзакции и запись ID сотрудника
+                        is_fraud = int(prob >= 0.9)
                         connection.execute(update_query, {
                             'isFlaggedFraud': is_fraud,
                             'transaction_id': transaction_id,
                             'employee_id': self.current_employee_id
                         })
-
-                        # Обновление баланса для отправителя
                         connection.execute(account_update_query, {
                             'new_balance': new_balance_orig,
                             'account_number': account_from
                         })
-
-                        # Обновление баланса для получателя
                         connection.execute(account_update_query, {
                             'new_balance': new_balance_dest,
                             'account_number': account_to
                         })
-                        fraudulent_count = sum(predictions)
+
+                        if is_fraud:
+                            fraudulent_count += 1
             except Exception as e:
                 print(f"Error during fraud detection process: {e}")
+
             print(f"Fraud detection completed: {fraudulent_count} fraudulent transactions flagged.")
         except Exception as e:
             print(f"Error during fraud detection process: {e}")
 
     def generate_credit_report(self):
-        """Отображает сводную статистику по кредитам."""
         self.clear_frame()
 
         label = ctk.CTkLabel(self.main_frame, text="Credit Report", font=("Arial", 18))
@@ -1232,19 +1092,16 @@ class AppBank(ctk.CTk):
             error_label = ctk.CTkLabel(self.main_frame, text=f"Error generating report: {e}")
             error_label.pack(pady=20)
 
-        # Кнопка возврата
         back_button = ctk.CTkButton(self.main_frame, text="Back",
                                     command=lambda: self.show_employee_frame(self.current_employee_id))
         back_button.pack(pady=10)
 
     def manage_employee_accounts(self):
-        """Управляет учетными записями сотрудников."""
         self.clear_frame()
 
         label = ctk.CTkLabel(self.main_frame, text="Manage Employee Accounts", font=("Arial", 18))
         label.pack(pady=20)
 
-        # Пример интерфейса
         actions = [
             ("Add Employee", self.add_employee),
             ("Remove Employee", self.remove_employee)
@@ -1253,20 +1110,15 @@ class AppBank(ctk.CTk):
         for text, command in actions:
             button = ctk.CTkButton(self.main_frame, text=text, command=command)
             button.pack(pady=5)
-
-        # Кнопка возврата
         back_button = ctk.CTkButton(self.main_frame, text="Back",
                                     command=lambda: self.show_employee_frame(self.current_employee_id))
         back_button.pack(pady=10)
 
     def add_employee(self):
-        """Добавляет нового сотрудника в базу данных."""
         self.clear_frame()
 
         label = ctk.CTkLabel(self.main_frame, text="Add Employee", font=("Arial", 18))
         label.pack(pady=20)
-
-        # Поля ввода данных для нового сотрудника
         firstname_label = ctk.CTkLabel(self.main_frame, text="First Name:")
         firstname_label.pack()
         firstname_entry = ctk.CTkEntry(self.main_frame)
@@ -1310,23 +1162,18 @@ class AppBank(ctk.CTk):
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to add employee: {e}")
 
-        # Кнопка сохранения
         save_button = ctk.CTkButton(self.main_frame, text="Save", command=save_employee)
         save_button.pack(pady=10)
 
-        # Кнопка возврата
         back_button = ctk.CTkButton(self.main_frame, text="Back",
                                     command=self.manage_employee_accounts)
         back_button.pack(pady=10)
 
     def remove_employee(self):
-        """Удаляет сотрудника из базы данных."""
         self.clear_frame()
 
         label = ctk.CTkLabel(self.main_frame, text="Remove Employee", font=("Arial", 18))
         label.pack(pady=20)
-
-        # Поле ввода ID сотрудника
         employee_id_label = ctk.CTkLabel(self.main_frame, text="Enter Employee ID:")
         employee_id_label.pack(pady=5)
         employee_id_entry = ctk.CTkEntry(self.main_frame)
@@ -1340,7 +1187,6 @@ class AppBank(ctk.CTk):
 
             try:
                 cursor = self.conn.cursor()
-                # Проверяем, существует ли сотрудник
                 check_query = "SELECT COUNT(*) FROM employees WHERE employee_id = ?"
                 cursor.execute(check_query, (int(employee_id),))
                 exists = cursor.fetchone()[0]
@@ -1348,7 +1194,6 @@ class AppBank(ctk.CTk):
                     messagebox.showerror("Error", "Employee ID not found.")
                     return
 
-                # Удаление сотрудника
                 delete_query = "DELETE FROM employees WHERE employee_id = ?"
                 cursor.execute(delete_query, (int(employee_id),))
                 self.conn.commit()
@@ -1357,21 +1202,16 @@ class AppBank(ctk.CTk):
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to remove employee: {e}")
 
-        # Кнопка подтверждения
         confirm_button = ctk.CTkButton(self.main_frame, text="Remove", command=confirm_removal)
         confirm_button.pack(pady=10)
 
-        # Кнопка возврата
         back_button = ctk.CTkButton(self.main_frame, text="Back", command=self.manage_employee_accounts)
         back_button.pack(pady=10)
 
     def clear_frame(self):
-        """Очищает текущий фрейм."""
         for widget in self.main_frame.winfo_children():
             widget.destroy()
 
-
-# Запуск приложения
 if __name__ == "__main__":
     app = AppBank()
     app.mainloop()
